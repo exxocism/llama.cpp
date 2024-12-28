@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
   <meta name="color-scheme" content="light dark">
-  <title>🦙 llama.cpp - chat</title>
+  <title>ChatGPT Self-hosted</title>
 </head>
 
 <body>
@@ -49,7 +49,7 @@
       <!-- main view -->
       <div class="chat-screen drawer-content grow flex flex-col h-screen w-screen mx-auto px-4">
         <!-- header -->
-        <div class="flex flex-row items-center mt-6 mb-6">
+        <div class="flex flex-row items-center mt-6">
           <!-- open sidebar button -->
           <label for="toggle-drawer" class="btn btn-ghost lg:hidden">
             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-list" viewBox="0 0 16 16">
@@ -57,7 +57,12 @@
             </svg>
           </label>
 
-          <div class="grow text-2xl font-bold ml-2">llama.cpp</div>
+          <div class="grow">
+            <select class="select select-ghost w-auto max-w-xs font-bold text-xl" @change="onModelChange($event)" v-model="currentModelId">
+              <option disabled selected>Select your model</option>
+              <option v-for="model in models" :key="model.name" :value="model.id">{{ model.name }}</option>
+            </select>
+          </div>
 
           <!-- action buttons (top right) -->
           <div class="flex items-center">
@@ -112,6 +117,7 @@
             </div>
           </div>
         </div>
+        <div class="ml-6 text-sm font-thin text-slate-500 mb-4">{{ modelDescription }}</div>
 
         <!-- chat messages -->
         <div id="messages-list" class="flex flex-col grow overflow-y-auto">

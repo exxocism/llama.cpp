@@ -15,7 +15,14 @@ import daisyuiThemes from 'daisyui/src/theming/themes';
 // ponyfill for missing ReadableStream asyncIterator on Safari
 import { asyncIterator } from '@sec-ant/readable-stream/ponyfill/asyncIterator';
 
+// compression library
+import pako from "pako";
+
+// lodash library
+import _ from "lodash";
+
 const isDev = import.meta.env.MODE === 'development';
+const useCompression = true; // set to true if you want to use gzip compression for local storage
 
 // utility functions
 const isString = (x) => !!x.toLowerCase;
@@ -38,12 +45,106 @@ const copyStr = (textToCopy) => {
     document.execCommand('copy');
   }
 };
+const compressedStorage = {
+    getItem(key) {
+        const compressed = window.localStorage.getItem(key);
+        try {
+            const bytes = Uint8Array.from(atob(compressed), (c) =>
+                c.charCodeAt(0)
+            );
+            return new TextDecoder().decode(this.decompress(bytes));
+        } catch (error) {
+            return compressed;
+        }
+    },
+    setItem(key, value) {
+        const compressed = this.compress(new TextEncoder().encode(value));
+        const compressedHex = btoa(this.uintToString(compressed));
+        window.localStorage.setItem(key, compressedHex);
+    },
+    removeItem: (key) => window.localStorage.removeItem(key),
+    clear: () => window.localStorage.clear(),
+    key: (index) => window.localStorage.key(index),
+    length: window.localStorage.length,
+    [Symbol.iterator]: function* () {
+        for (let i = 0; i < window.localStorage.length; i++) {
+            yield window.localStorage.key(i);
+        }
+    },
+    uintToString(bytes) {
+        const chunkSize = 0x8000;
+        let result = "";
+        for (let i = 0; i < bytes.length; i += chunkSize) {
+            result += String.fromCharCode.apply(
+                null,
+                bytes.subarray(i, i + chunkSize)
+            );
+        }
+        return result;
+    },
+    compress: (encoded) => pako.gzip(encoded, { level: 9 }),
+    decompress: (bytes) => pako.ungzip(bytes),
+};
+const localStorage = useCompression ? compressedStorage : window.localStorage;
 
 // constants
 const BASE_URL = isDev
   ? (localStorage.getItem('base') || 'https://localhost:8080') // for debugging
   : (new URL('.', document.baseURI).href).toString().replace(/\/$/, ''); // for production
 console.log({ BASE_URL });
+
+const models = {
+    mistralAI: {
+        id: "mistralAI",
+        name: "MistralAI",
+        description: "Free-for lifetime, self-hosted AI model.",
+        baseUrl: BASE_URL,
+        modelName: "mistralai",
+        withParams: [
+            "messages",
+            "stream",
+            "cache_prompt",
+            "samplers",
+            "temperature",
+            "dynatemp_range",
+            "dynatemp_exponent",
+            "top_k",
+            "top_p",
+            "min_p",
+            "typical_p",
+            "xtc_probability",
+            "xtc_threshold",
+            "repeat_last_n",
+            "repeat_penalty",
+            "presence_penalty",
+            "frequency_penalty",
+            "dry_multiplier",
+            "dry_base",
+            "dry_allowed_length",
+            "dry_penalty_last_n",
+            "max_tokens",
+            "timings_per_token",
+            "custom",
+        ],
+    },
+    gpt4o: {
+        id: "gpt4o",
+        name: "GPT-4o",
+        description: "OpenAI's default paid model.",
+        baseUrl: "https://api.openai.com",
+        modelName: "gpt-4o",
+        withParams: ["model", "messages", "stream"],
+    },
+    gpto1mini: {
+        id: "gpto1mini",
+        name: "GPT-o1 mini",
+        description: "Thinking model. Smart and slower.",
+        baseUrl: "https://api.openai.com",
+        modelName: "o1-mini",
+        withParams: ["model", "messages", "stream"],
+        action: (params) => {params.messages = params.messages.slice(1); return params;},
+    },
+};
 
 const CONFIG_DEFAULT = {
   // Note: in order not to introduce breaking changes, please keep the same data type (number, string, etc) if you want to change the default value. Do not use null or undefined for default value.
@@ -71,6 +172,8 @@ const CONFIG_DEFAULT = {
   dry_penalty_last_n: -1,
   max_tokens: -1,
   custom: '', // custom json-stringified object
+  currentModel: models.mistralAI,
+  availableModels: [..._.values(models)],
 };
 const CONFIG_INFO = {
   apiKey: 'Set the API Key if you are using --api-key option for the server.',
@@ -100,7 +203,7 @@ const CONFIG_INFO = {
 const CONFIG_NUMERIC_KEYS = Object.entries(CONFIG_DEFAULT).filter(e => isNumeric(e[1])).map(e => e[0]);
 // list of themes supported by daisyui
 const THEMES = ['light', 'dark']
-  // make sure light & dark are always at the beginning
+    // make sure light & dark are always at the beginning
   .concat(Object.keys(daisyuiThemes).filter(t => t !== 'light' && t !== 'dark'));
 
 // markdown support
@@ -211,10 +314,13 @@ const StorageUtils = {
   // manage conversations
   getAllConversations() {
     const res = [];
-    for (const key in localStorage) {
-      if (key.startsWith('conv-')) {
-        res.push(JSON.parse(localStorage.getItem(key)));
-      }
+    const storage = useCompression
+        ? localStorage
+        : Object.keys(localStorage);
+    for (const key of storage) {
+        if (key.startsWith("conv-")) {
+            res.push(JSON.parse(localStorage.getItem(key)));
+        }
     }
     res.sort((a, b) => b.lastModified - a.lastModified);
     return res;
@@ -261,7 +367,7 @@ const StorageUtils = {
     return msg;
   },
 
-  // manage config
+    // manage config
   getConfig() {
     const savedVal = JSON.parse(localStorage.getItem('config') || '{}');
     // to prevent breaking changes in the future, we always provide default value for missing keys
@@ -292,7 +398,7 @@ const chatScrollToBottom = (requiresNearBottom) => {
   const spaceToBottom = msgListElem.scrollHeight - msgListElem.scrollTop - msgListElem.clientHeight;
   if (!requiresNearBottom || (spaceToBottom < 100)) {
     setTimeout(() => msgListElem.scrollTo({ top: msgListElem.scrollHeight }), 1);
-  }
+    }
 };
 
 // wrapper for SSE
@@ -336,6 +442,13 @@ const mainApp = createApp({
       configDefault: {...CONFIG_DEFAULT},
       configInfo: {...CONFIG_INFO},
       isDev,
+      models,
+      currentModelId:
+        StorageUtils.getConfig()?.currentModel?.id ||
+        models.mistralAI.id,
+      modelDescription:
+        StorageUtils.getConfig()?.currentModel?.description ||
+        models.mistralAI.description,
     }
   },
   computed: {},
@@ -424,10 +537,11 @@ const mainApp = createApp({
       this.pendingMsg = { id: Date.now()+1, role: 'assistant', content: null };
       this.isGenerating = true;
 
-      try {
+    try {
         const abortController = new AbortController();
         this.stopGeneration = () => abortController.abort();
-        const params = {
+        const paramsDraft = {
+          model: this.config.currentModel.modelName,
           messages: [
             { role: 'system', content: this.config.systemMessage },
             ...this.messages,
@@ -454,9 +568,21 @@ const mainApp = createApp({
           dry_penalty_last_n: this.config.dry_penalty_last_n,
           max_tokens: this.config.max_tokens,
           timings_per_token: !!this.config.showTokensPerSecond,
-          ...(this.config.custom.length ? JSON.parse(this.config.custom) : {}),
         };
-        const chunks = sendSSEPostRequest(`${BASE_URL}/v1/chat/completions`, {
+        let params = {
+          ..._.pick(paramsDraft, this.config.currentModel.withParams),
+          ...(_.includes(
+            this.config.currentModel.withParams,
+            "custom"
+          ) && this.config.custom.length
+            ? JSON.parse(this.config.custom)
+            : {}),
+        };
+        if(this.config.currentModel.hasOwnProperty("action")) {
+          params = this.config.currentModel.action(params);
+        };
+
+        const chunks = sendSSEPostRequest(`${this.config.currentModel.baseUrl}/v1/chat/completions`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -516,13 +642,13 @@ const mainApp = createApp({
 
     // message actions
     regenerateMsg(msg) {
-      if (this.isGenerating) return;
-      // TODO: somehow keep old history (like how ChatGPT has different "tree"). This can be done by adding "sub-conversations" with "subconv-" prefix, and new message will have a list of subconvIds
-      const currConvId = this.viewingConvId;
-      StorageUtils.filterAndKeepMsgs(currConvId, (m) => m.id < msg.id);
-      this.fetchConversation();
-      this.fetchMessages();
-      this.generateMessage(currConvId);
+        if (this.isGenerating) return;
+        // TODO: somehow keep old history (like how ChatGPT has different "tree"). This can be done by adding "sub-conversations" with "subconv-" prefix, and new message will have a list of subconvIds
+        const currConvId = this.viewingConvId;
+        StorageUtils.filterAndKeepMsgs(currConvId, (m) => m.id < msg.id);
+        this.fetchConversation();
+        this.fetchMessages();
+        this.generateMessage(currConvId);
     },
     editUserMsgAndRegenerate(msg) {
       if (this.isGenerating) return;
@@ -538,7 +664,7 @@ const mainApp = createApp({
       this.fetchMessages();
       this.generateMessage(currConvId);
     },
-
+    
     // settings dialog methods
     closeAndSaveConfigDialog() {
       try {
@@ -566,13 +692,21 @@ const mainApp = createApp({
         this.config = {...CONFIG_DEFAULT};
       }
     },
-
+    
     // sync state functions
     fetchConversation() {
       this.conversations = StorageUtils.getAllConversations();
     },
     fetchMessages() {
       this.messages = StorageUtils.getOneConversation(this.viewingConvId)?.messages ?? [];
+    },
+
+    // Model selection
+    onModelChange(event) {
+        this.config.currentModel = models[event.target.value];
+        this.currentModelId = models[event.target.value].id;
+        this.modelDescription = models[event.target.value].description;
+        StorageUtils.setConfig(this.config);
     },
 
     // debug functions
