@@ -561,7 +561,6 @@ const mainApp = createApp({
     },
     async sendMessage() {
       if (!this.inputMsg) return;
-      if (!(await this.isModelRunnable())) return this.switchModel();
       const currConvId = this.viewingConvId;
 
       StorageUtils.appendMsg(currConvId, {
