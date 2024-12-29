@@ -457,9 +457,9 @@ async function* sendSSEPostRequest(url, fetchOptions) {
 async function getCurrentModelName() {
   const res = await fetch(`${BASE_URL}/v1/models`);
   const models = await res.json();
-  console.log(models.data[0].id);
-  const modelId = models.data[0].id;
-  return modelId.split('/').pop().split('.').shift();
+  const regex = /llama.cpp\/(.*)\.gguf$/;
+  const modelId = regex.exec(models.data[0].id)[1];
+  return modelId;
 }
 
 const mainApp = createApp({
