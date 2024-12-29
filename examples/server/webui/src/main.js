@@ -16,10 +16,10 @@ import daisyuiThemes from 'daisyui/src/theming/themes';
 import { asyncIterator } from '@sec-ant/readable-stream/ponyfill/asyncIterator';
 
 // compression library
-import pako from "pako";
+import pako from 'pako';
 
 // lodash library
-import _ from "lodash";
+import _ from 'lodash';
 
 const isDev = import.meta.env.MODE === 'development';
 const useCompression = true; // set to true if you want to use gzip compression for local storage
@@ -46,112 +46,115 @@ const copyStr = (textToCopy) => {
   }
 };
 const compressedStorage = {
-    getItem(key) {
-        const compressed = window.localStorage.getItem(key);
-        try {
-            const bytes = Uint8Array.from(atob(compressed), (c) =>
-                c.charCodeAt(0)
-            );
-            return new TextDecoder().decode(this.decompress(bytes));
-        } catch (error) {
-            return compressed;
-        }
-    },
-    setItem(key, value) {
-        const compressed = this.compress(new TextEncoder().encode(value));
-        const compressedHex = btoa(this.uintToString(compressed));
-        window.localStorage.setItem(key, compressedHex);
-    },
-    removeItem: (key) => window.localStorage.removeItem(key),
-    clear: () => window.localStorage.clear(),
-    key: (index) => window.localStorage.key(index),
-    length: window.localStorage.length,
-    [Symbol.iterator]: function* () {
-        for (let i = 0; i < window.localStorage.length; i++) {
-            yield window.localStorage.key(i);
-        }
-    },
-    uintToString(bytes) {
-        const chunkSize = 0x8000;
-        let result = "";
-        for (let i = 0; i < bytes.length; i += chunkSize) {
-            result += String.fromCharCode.apply(
-                null,
-                bytes.subarray(i, i + chunkSize)
-            );
-        }
-        return result;
-    },
-    compress: (encoded) => pako.gzip(encoded, { level: 9 }),
-    decompress: (bytes) => pako.ungzip(bytes),
+  getItem(key) {
+    const compressed = window.localStorage.getItem(key);
+    try {
+      const bytes = Uint8Array.from(atob(compressed), (c) => c.charCodeAt(0));
+      return new TextDecoder().decode(this.decompress(bytes));
+    } catch (error) {
+      return compressed;
+    }
+  },
+  setItem(key, value) {
+    const compressed = this.compress(new TextEncoder().encode(value));
+    const compressedHex = btoa(this.uintToString(compressed));
+    window.localStorage.setItem(key, compressedHex);
+  },
+  removeItem: (key) => window.localStorage.removeItem(key),
+  clear: () => window.localStorage.clear(),
+  key: (index) => window.localStorage.key(index),
+  length: window.localStorage.length,
+  [Symbol.iterator]: function* () {
+    for (let i = 0; i < window.localStorage.length; i++) {
+      yield window.localStorage.key(i);
+    }
+  },
+  uintToString(bytes) {
+    const chunkSize = 0x8000;
+    let result = '';
+    for (let i = 0; i < bytes.length; i += chunkSize) {
+      result += String.fromCharCode.apply(null, bytes.subarray(i, i + chunkSize));
+    }
+    return result;
+  },
+  compress: (encoded) => pako.gzip(encoded, { level: 9 }),
+  decompress: (bytes) => pako.ungzip(bytes),
 };
 const localStorage = useCompression ? compressedStorage : window.localStorage;
 
 // constants
 const BASE_URL = isDev
-  ? (localStorage.getItem('base') || 'https://localhost:8080') // for debugging
-  : (new URL('.', document.baseURI).href).toString().replace(/\/$/, ''); // for production
+  ? localStorage.getItem('base') || 'https://localhost:8080' // for debugging
+  : new URL('.', document.baseURI).href.toString().replace(/\/$/, ''); // for production
 console.log({ BASE_URL });
 
+const locallModelParams = [
+  'messages',
+  'stream',
+  'cache_prompt',
+  'samplers',
+  'temperature',
+  'dynatemp_range',
+  'dynatemp_exponent',
+  'top_k',
+  'top_p',
+  'min_p',
+  'typical_p',
+  'xtc_probability',
+  'xtc_threshold',
+  'repeat_last_n',
+  'repeat_penalty',
+  'presence_penalty',
+  'frequency_penalty',
+  'dry_multiplier',
+  'dry_base',
+  'dry_allowed_length',
+  'dry_penalty_last_n',
+  'max_tokens',
+  'timings_per_token',
+  'custom',
+];
+
 const models = {
-    mistralAI: {
-        id: "mistralAI",
-        name: "MistralAI",
-        description: "Free-for lifetime, self-hosted AI model.",
-        baseUrl: BASE_URL,
-        modelName: "mistralai",
-        withParams: [
-            "messages",
-            "stream",
-            "cache_prompt",
-            "samplers",
-            "temperature",
-            "dynatemp_range",
-            "dynatemp_exponent",
-            "top_k",
-            "top_p",
-            "min_p",
-            "typical_p",
-            "xtc_probability",
-            "xtc_threshold",
-            "repeat_last_n",
-            "repeat_penalty",
-            "presence_penalty",
-            "frequency_penalty",
-            "dry_multiplier",
-            "dry_base",
-            "dry_allowed_length",
-            "dry_penalty_last_n",
-            "max_tokens",
-            "timings_per_token",
-            "custom",
-        ],
+  mistralAI: {
+    id: 'mistralAI',
+    name: 'MistralAI',
+    description: 'Free-for lifetime, self-hosted AI model.',
+    baseUrl: BASE_URL,
+    modelName: 'unsloth_Llama-3.3-70B-Instruct-GGUF_Llama-3.3-70B-Instruct-Q4_K_M',
+    withParams: locallModelParams,
+  },
+  gpt4o: {
+    id: 'gpt4o',
+    name: 'GPT-4o',
+    description: "OpenAI's default paid model.",
+    baseUrl: 'https://api.openai.com',
+    modelName: 'gpt-4o',
+    withParams: ['model', 'messages', 'stream'],
+  },
+  gpto1mini: {
+    id: 'gpto1mini',
+    name: 'GPT-o1 mini',
+    description: 'Thinking model. Smart and slower.',
+    baseUrl: 'https://api.openai.com',
+    modelName: 'o1-mini',
+    withParams: ['model', 'messages', 'stream'],
+    action: (params) => {
+      params.messages = params.messages.slice(1);
+      return params;
     },
-    gpt4o: {
-        id: "gpt4o",
-        name: "GPT-4o",
-        description: "OpenAI's default paid model.",
-        baseUrl: "https://api.openai.com",
-        modelName: "gpt-4o",
-        withParams: ["model", "messages", "stream"],
+  },
+  o1: {
+    id: 'o1',
+    name: 'GPT-o1',
+    description: 'The best model in OpenAI, Slow, super expensive.',
+    baseUrl: 'https://api.openai.com',
+    modelName: 'o1-preview',
+    withParams: ['model', 'messages', 'stream'],
+    action: (params) => {
+      params.messages = params.messages.slice(1);
+      return params;
     },
-    gpto1mini: {
-        id: "gpto1mini",
-        name: "GPT-o1 mini",
-        description: "Thinking model. Smart and slower.",
-        baseUrl: "https://api.openai.com",
-        modelName: "o1-mini",
-        withParams: ["model", "messages", "stream"],
-        action: (params) => {params.messages = params.messages.slice(1); return params;},
-    },
-    o1: {
-      id: "o1",
-      name: "GPT-o1",
-      description: "The best model in OpenAI, Slow, super expensive.",
-      baseUrl: "https://api.openai.com",
-      modelName: "o1-preview",
-      withParams: ["model", "messages", "stream"],
-      action: (params) => {params.messages = params.messages.slice(1); return params;},
   },
 };
 
@@ -187,50 +190,68 @@ const CONFIG_DEFAULT = {
 const CONFIG_INFO = {
   apiKey: 'Set the API Key if you are using --api-key option for the server.',
   systemMessage: 'The starting message that defines how model should behave.',
-  samplers: 'The order at which samplers are applied, in simplified way. Default is "dkypmxt": dry->top_k->typ_p->top_p->min_p->xtc->temperature',
-  temperature: 'Controls the randomness of the generated text by affecting the probability distribution of the output tokens. Higher = more random, lower = more focused.',
-  dynatemp_range: 'Addon for the temperature sampler. The added value to the range of dynamic temperature, which adjusts probabilities by entropy of tokens.',
-  dynatemp_exponent: 'Addon for the temperature sampler. Smoothes out the probability redistribution based on the most probable token.',
+  samplers:
+    'The order at which samplers are applied, in simplified way. Default is "dkypmxt": dry->top_k->typ_p->top_p->min_p->xtc->temperature',
+  temperature:
+    'Controls the randomness of the generated text by affecting the probability distribution of the output tokens. Higher = more random, lower = more focused.',
+  dynatemp_range:
+    'Addon for the temperature sampler. The added value to the range of dynamic temperature, which adjusts probabilities by entropy of tokens.',
+  dynatemp_exponent:
+    'Addon for the temperature sampler. Smoothes out the probability redistribution based on the most probable token.',
   top_k: 'Keeps only k top tokens.',
   top_p: 'Limits tokens to those that together have a cumulative probability of at least p',
-  min_p: 'Limits tokens based on the minimum probability for a token to be considered, relative to the probability of the most likely token.',
-  xtc_probability: 'XTC sampler cuts out top tokens; this parameter controls the chance of cutting tokens at all. 0 disables XTC.',
-  xtc_threshold: 'XTC sampler cuts out top tokens; this parameter controls the token probability that is required to cut that token.',
+  min_p:
+    'Limits tokens based on the minimum probability for a token to be considered, relative to the probability of the most likely token.',
+  xtc_probability:
+    'XTC sampler cuts out top tokens; this parameter controls the chance of cutting tokens at all. 0 disables XTC.',
+  xtc_threshold:
+    'XTC sampler cuts out top tokens; this parameter controls the token probability that is required to cut that token.',
   typical_p: 'Sorts and limits tokens based on the difference between log-probability and entropy.',
   repeat_last_n: 'Last n tokens to consider for penalizing repetition',
   repeat_penalty: 'Controls the repetition of token sequences in the generated text',
   presence_penalty: 'Limits tokens based on whether they appear in the output or not.',
   frequency_penalty: 'Limits tokens based on how often they appear in the output.',
-  dry_multiplier: 'DRY sampling reduces repetition in generated text even across long contexts. This parameter sets the DRY sampling multiplier.',
-  dry_base: 'DRY sampling reduces repetition in generated text even across long contexts. This parameter sets the DRY sampling base value.',
-  dry_allowed_length: 'DRY sampling reduces repetition in generated text even across long contexts. This parameter sets the allowed length for DRY sampling.',
-  dry_penalty_last_n: 'DRY sampling reduces repetition in generated text even across long contexts. This parameter sets DRY penalty for the last n tokens.',
+  dry_multiplier:
+    'DRY sampling reduces repetition in generated text even across long contexts. This parameter sets the DRY sampling multiplier.',
+  dry_base:
+    'DRY sampling reduces repetition in generated text even across long contexts. This parameter sets the DRY sampling base value.',
+  dry_allowed_length:
+    'DRY sampling reduces repetition in generated text even across long contexts. This parameter sets the allowed length for DRY sampling.',
+  dry_penalty_last_n:
+    'DRY sampling reduces repetition in generated text even across long contexts. This parameter sets DRY penalty for the last n tokens.',
   max_tokens: 'The maximum number of token per output.',
   custom: '', // custom json-stringified object
 };
 // config keys having numeric value (i.e. temperature, top_k, top_p, etc)
-const CONFIG_NUMERIC_KEYS = Object.entries(CONFIG_DEFAULT).filter(e => isNumeric(e[1])).map(e => e[0]);
+const CONFIG_NUMERIC_KEYS = Object.entries(CONFIG_DEFAULT)
+  .filter((e) => isNumeric(e[1]))
+  .map((e) => e[0]);
 // list of themes supported by daisyui
 const THEMES = ['light', 'dark']
-    // make sure light & dark are always at the beginning
-  .concat(Object.keys(daisyuiThemes).filter(t => t !== 'light' && t !== 'dark'));
+  // make sure light & dark are always at the beginning
+  .concat(Object.keys(daisyuiThemes).filter((t) => t !== 'light' && t !== 'dark'));
 
 // markdown support
 const VueMarkdown = defineComponent(
   (props) => {
-    const md = shallowRef(new MarkdownIt({
-      breaks: true,
-      highlight: function (str, lang) { // Add highlight.js
-        if (lang && hljs.getLanguage(lang)) {
-          try {
-            return '<pre><code class="hljs">' +
-                   hljs.highlight(str, { language: lang, ignoreIllegals: true }).value +
-                   '</code></pre>';
-          } catch (__) {}
-        }
-        return '<pre><code class="hljs">' + md.value.utils.escapeHtml(str) + '</code></pre>';
-      }
-    }));
+    const md = shallowRef(
+      new MarkdownIt({
+        breaks: true,
+        highlight: function (str, lang) {
+          // Add highlight.js
+          if (lang && hljs.getLanguage(lang)) {
+            try {
+              return (
+                '<pre><code class="hljs">' +
+                hljs.highlight(str, { language: lang, ignoreIllegals: true }).value +
+                '</code></pre>'
+              );
+            } catch (__) {}
+          }
+          return '<pre><code class="hljs">' + md.value.utils.escapeHtml(str) + '</code></pre>';
+        },
+      })
+    );
     // support latex with double dollar sign and square brackets
     md.value.use(markdownItKatexGpt, {
       delimiters: [
@@ -277,7 +298,7 @@ const SettingsModalShortInput = defineComponent({
 // message bubble component
 const MessageBubble = defineComponent({
   components: {
-    VueMarkdown
+    VueMarkdown,
   },
   template: document.getElementById('message-bubble').innerHTML,
   props: {
@@ -300,7 +321,7 @@ const MessageBubble = defineComponent({
         prompt_per_second: this.msg.timings.prompt_n / (this.msg.timings.prompt_ms / 1000),
         predicted_per_second: this.msg.timings.predicted_n / (this.msg.timings.predicted_ms / 1000),
       };
-    }
+    },
   },
   methods: {
     copyMsg() {
@@ -323,13 +344,11 @@ const StorageUtils = {
   // manage conversations
   getAllConversations() {
     const res = [];
-    const storage = useCompression
-        ? localStorage
-        : Object.keys(localStorage);
+    const storage = useCompression ? localStorage : Object.keys(localStorage);
     for (const key of storage) {
-        if (key.startsWith("conv-")) {
-            res.push(JSON.parse(localStorage.getItem(key)));
-        }
+      if (key.startsWith('conv-')) {
+        res.push(JSON.parse(localStorage.getItem(key)));
+      }
     }
     res.sort((a, b) => b.lastModified - a.lastModified);
     return res;
@@ -376,7 +395,7 @@ const StorageUtils = {
     return msg;
   },
 
-    // manage config
+  // manage config
   getConfig() {
     const savedVal = JSON.parse(localStorage.getItem('config') || '{}');
     // to prevent breaking changes in the future, we always provide default value for missing keys
@@ -405,19 +424,17 @@ const StorageUtils = {
 const chatScrollToBottom = (requiresNearBottom) => {
   const msgListElem = document.getElementById('messages-list');
   const spaceToBottom = msgListElem.scrollHeight - msgListElem.scrollTop - msgListElem.clientHeight;
-  if (!requiresNearBottom || (spaceToBottom < 100)) {
+  if (!requiresNearBottom || spaceToBottom < 100) {
     setTimeout(() => msgListElem.scrollTo({ top: msgListElem.scrollHeight }), 1);
-    }
+  }
 };
 
 // wrapper for SSE
 async function* sendSSEPostRequest(url, fetchOptions) {
   const res = await fetch(url, fetchOptions);
-  const lines = res.body
-    .pipeThrough(new TextDecoderStream())
-    .pipeThrough(new TextLineStream());
+  const lines = res.body.pipeThrough(new TextDecoderStream()).pipeThrough(new TextLineStream());
   for await (const line of asyncIterator(lines)) {
-    if (isDev) console.log({line});
+    if (isDev) console.log({ line });
     if (line.startsWith('data:') && !line.endsWith('[DONE]')) {
       const data = JSON.parse(line.slice(5));
       yield data;
@@ -426,7 +443,7 @@ async function* sendSSEPostRequest(url, fetchOptions) {
       throw new Error(data.message || 'Unknown error');
     }
   }
-};
+}
 
 const mainApp = createApp({
   components: {
@@ -448,17 +465,13 @@ const mainApp = createApp({
       showConfigDialog: false,
       // const
       themes: THEMES,
-      configDefault: {...CONFIG_DEFAULT},
-      configInfo: {...CONFIG_INFO},
+      configDefault: { ...CONFIG_DEFAULT },
+      configInfo: { ...CONFIG_INFO },
       isDev,
       models,
-      currentModelId:
-        StorageUtils.getConfig()?.currentModel?.id ||
-        models.mistralAI.id,
-      modelDescription:
-        StorageUtils.getConfig()?.currentModel?.description ||
-        models.mistralAI.description,
-    }
+      currentModelId: StorageUtils.getConfig()?.currentModel?.id || models.mistralAI.id,
+      modelDescription: StorageUtils.getConfig()?.currentModel?.description || models.mistralAI.description,
+    };
   },
   computed: {},
   mounted() {
@@ -472,13 +485,13 @@ const mainApp = createApp({
     this.setSelectedTheme(this.selectedTheme);
   },
   watch: {
-    viewingConvId: function(val, oldVal) {
+    viewingConvId: function (val, oldVal) {
       if (val != oldVal) {
         this.fetchMessages();
         chatScrollToBottom();
         this.hideSidebar();
       }
-    }
+    },
   },
   methods: {
     hideSidebar() {
@@ -543,18 +556,19 @@ const mainApp = createApp({
     },
     async generateMessage(currConvId) {
       if (this.isGenerating) return;
-      this.pendingMsg = { id: Date.now()+1, role: 'assistant', content: null };
+      this.pendingMsg = {
+        id: Date.now() + 1,
+        role: 'assistant',
+        content: null,
+      };
       this.isGenerating = true;
 
-    try {
+      try {
         const abortController = new AbortController();
         this.stopGeneration = () => abortController.abort();
         const paramsDraft = {
           model: this.config.currentModel.modelName,
-          messages: [
-            { role: 'system', content: this.config.systemMessage },
-            ...this.messages,
-          ],
+          messages: [{ role: 'system', content: this.config.systemMessage }, ...this.messages],
           stream: true,
           cache_prompt: true,
           samplers: this.config.samplers,
@@ -580,22 +594,19 @@ const mainApp = createApp({
         };
         let params = {
           ..._.pick(paramsDraft, this.config.currentModel.withParams),
-          ...(_.includes(
-            this.config.currentModel.withParams,
-            "custom"
-          ) && this.config.custom.length
+          ...(_.includes(this.config.currentModel.withParams, 'custom') && this.config.custom.length
             ? JSON.parse(this.config.custom)
             : {}),
         };
-        if(this.config.currentModel.hasOwnProperty("action")) {
+        if (this.config.currentModel.hasOwnProperty('action')) {
           params = this.config.currentModel.action(params);
-        };
+        }
 
         const chunks = sendSSEPostRequest(`${this.config.currentModel.baseUrl}/v1/chat/completions`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            ...(this.config.apiKey ? {'Authorization': `Bearer ${this.config.apiKey}`} : {})
+            ...(this.config.apiKey ? { Authorization: `Bearer ${this.config.apiKey}` } : {}),
           },
           body: JSON.stringify(params),
           signal: abortController.signal,
@@ -651,13 +662,13 @@ const mainApp = createApp({
 
     // message actions
     regenerateMsg(msg) {
-        if (this.isGenerating) return;
-        // TODO: somehow keep old history (like how ChatGPT has different "tree"). This can be done by adding "sub-conversations" with "subconv-" prefix, and new message will have a list of subconvIds
-        const currConvId = this.viewingConvId;
-        StorageUtils.filterAndKeepMsgs(currConvId, (m) => m.id < msg.id);
-        this.fetchConversation();
-        this.fetchMessages();
-        this.generateMessage(currConvId);
+      if (this.isGenerating) return;
+      // TODO: somehow keep old history (like how ChatGPT has different "tree"). This can be done by adding "sub-conversations" with "subconv-" prefix, and new message will have a list of subconvIds
+      const currConvId = this.viewingConvId;
+      StorageUtils.filterAndKeepMsgs(currConvId, (m) => m.id < msg.id);
+      this.fetchConversation();
+      this.fetchMessages();
+      this.generateMessage(currConvId);
     },
     editUserMsgAndRegenerate(msg) {
       if (this.isGenerating) return;
@@ -673,7 +684,7 @@ const mainApp = createApp({
       this.fetchMessages();
       this.generateMessage(currConvId);
     },
-    
+
     // settings dialog methods
     closeAndSaveConfigDialog() {
       try {
@@ -698,10 +709,10 @@ const mainApp = createApp({
     },
     resetConfigDialog() {
       if (window.confirm('Are you sure to reset all settings?')) {
-        this.config = {...CONFIG_DEFAULT};
+        this.config = { ...CONFIG_DEFAULT };
       }
     },
-    
+
     // sync state functions
     fetchConversation() {
       this.conversations = StorageUtils.getAllConversations();
@@ -712,10 +723,10 @@ const mainApp = createApp({
 
     // Model selection
     onModelChange(event) {
-        this.config.currentModel = models[event.target.value];
-        this.currentModelId = models[event.target.value].id;
-        this.modelDescription = models[event.target.value].description;
-        StorageUtils.setConfig(this.config);
+      this.config.currentModel = models[event.target.value];
+      this.currentModelId = models[event.target.value].id;
+      this.modelDescription = models[event.target.value].description;
+      StorageUtils.setConfig(this.config);
     },
 
     // debug functions
@@ -727,7 +738,7 @@ const mainApp = createApp({
         StorageUtils.appendMsg(demoConv.id, msg);
       }
       this.fetchConversation();
-    }
+    },
   },
 });
 mainApp.config.errorHandler = alert;
