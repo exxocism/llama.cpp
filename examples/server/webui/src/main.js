@@ -115,11 +115,26 @@ const locallModelParams = [
   'custom',
 ];
 
+const actions = {
+  removeSystemMessages: (params) => {
+    params.messages = params.messages.slice(1);
+    return params;
+  },
+};
+
 const models = {
   mistralAI: {
     id: 'mistralAI',
     name: 'MistralAI',
-    description: 'Free-for lifetime, self-hosted AI model.',
+    description: '22B Model. fast and generally good.',
+    baseUrl: BASE_URL,
+    modelName: 'lmstudio-community_Mistral-Small-Instruct-2409-GGUF_Mistral-Small-Instruct-2409-Q4_K_M',
+    withParams: locallModelParams,
+  },
+  llama3_3: {
+    id: 'llama3_3',
+    name: 'Llama 3.3',
+    description: "Meta's 70B model. slower but accurate.",
     baseUrl: BASE_URL,
     modelName: 'unsloth_Llama-3.3-70B-Instruct-GGUF_Llama-3.3-70B-Instruct-Q4_K_M',
     withParams: locallModelParams,
@@ -139,10 +154,7 @@ const models = {
     baseUrl: 'https://api.openai.com',
     modelName: 'o1-mini',
     withParams: ['model', 'messages', 'stream'],
-    action: (params) => {
-      params.messages = params.messages.slice(1);
-      return params;
-    },
+    action: actions.removeSystemMessages,
   },
   o1: {
     id: 'o1',
@@ -151,10 +163,7 @@ const models = {
     baseUrl: 'https://api.openai.com',
     modelName: 'o1-preview',
     withParams: ['model', 'messages', 'stream'],
-    action: (params) => {
-      params.messages = params.messages.slice(1);
-      return params;
-    },
+    action: actions.removeSystemMessages,
   },
 };
 
@@ -445,6 +454,14 @@ async function* sendSSEPostRequest(url, fetchOptions) {
   }
 }
 
+async function getCurrentModelName() {
+  const res = await fetch(`${BASE_URL}/v1/models`);
+  const models = await res.json();
+  console.log(models.data[0].id);
+  const modelId = models.data[0].id;
+  return modelId.split('/').pop().split('.').shift();
+}
+
 const mainApp = createApp({
   components: {
     VueMarkdown,
@@ -468,7 +485,9 @@ const mainApp = createApp({
       configDefault: { ...CONFIG_DEFAULT },
       configInfo: { ...CONFIG_INFO },
       isDev,
-      models,
+      freemodels: _.filter(models, { baseUrl: BASE_URL }),
+      paidmodels: _.filter(models, ({ baseUrl }) => baseUrl !== BASE_URL),
+      currentLocalModel: models.mistralAI.modelName,
       currentModelId: StorageUtils.getConfig()?.currentModel?.id || models.mistralAI.id,
       modelDescription: StorageUtils.getConfig()?.currentModel?.description || models.mistralAI.description,
     };
@@ -483,6 +502,7 @@ const mainApp = createApp({
     });
     resizeObserver.observe(pendingMsgElem);
     this.setSelectedTheme(this.selectedTheme);
+    this.updateCurrentLocalModel();
   },
   watch: {
     viewingConvId: function (val, oldVal) {
@@ -541,6 +561,7 @@ const mainApp = createApp({
     },
     async sendMessage() {
       if (!this.inputMsg) return;
+      if (!(await this.isModelRunnable())) return this.switchModel();
       const currConvId = this.viewingConvId;
 
       StorageUtils.appendMsg(currConvId, {
@@ -556,6 +577,8 @@ const mainApp = createApp({
     },
     async generateMessage(currConvId) {
       if (this.isGenerating) return;
+      if (!(await this.isModelRunnable())) return this.switchModel();
+
       this.pendingMsg = {
         id: Date.now() + 1,
         role: 'assistant',
@@ -727,6 +750,22 @@ const mainApp = createApp({
       this.currentModelId = models[event.target.value].id;
       this.modelDescription = models[event.target.value].description;
       StorageUtils.setConfig(this.config);
+    },
+
+    async updateCurrentLocalModel() {
+      const modelName = await getCurrentModelName();
+      this.currentLocalModel = modelName;
+      return modelName;
+    },
+
+    async isModelRunnable() {
+      if (this.config.currentModel.baseUrl !== BASE_URL) return true;
+      const modelName = await this.updateCurrentLocalModel();
+      return modelName === this.config.currentModel.modelName;
+    },
+
+    switchModel() {
+      return alert('The model you selected is not available. Ask the administrator to enable the model');
     },
 
     // debug functions

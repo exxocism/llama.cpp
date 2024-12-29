@@ -59,8 +59,10 @@
 
           <div class="grow">
             <select class="select select-ghost w-auto max-w-xs font-bold text-xl" @change="onModelChange($event)" v-model="currentModelId">
-              <option disabled selected>Select your model</option>
-              <option v-for="model in models" :key="model.name" :value="model.id">{{ model.name }}</option>
+              <option disabled selected>Free models</option>
+              <option v-for="freemodel in freemodels" :key="freemodel.name" :value="freemodel.id">{{ `${freemodel.name}${currentLocalModel === freemodel.modelName? '':' (inactive)'}` }}</option>
+              <option disabled selected>Paid models</option>
+              <option v-for="paidmodel in paidmodels" :key="paidmodel.name" :value="paidmodel.id">{{ paidmodel.name }}</option>
             </select>
           </div>
 
@@ -117,7 +119,7 @@
             </div>
           </div>
         </div>
-        <div class="ml-6 text-sm font-thin text-slate-500 mb-4">{{ modelDescription }}</div>
+        <div class="ml-6 text-sm font-thin text-slate-500 mb-2">{{ modelDescription }}</div>
 
         <!-- chat messages -->
         <div id="messages-list" class="flex flex-col grow overflow-y-auto">
