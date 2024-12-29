@@ -144,6 +144,15 @@ const models = {
         withParams: ["model", "messages", "stream"],
         action: (params) => {params.messages = params.messages.slice(1); return params;},
     },
+    o1: {
+      id: "o1",
+      name: "GPT-o1",
+      description: "The best model in OpenAI, Slow, super expensive.",
+      baseUrl: "https://api.openai.com",
+      modelName: "o1-preview",
+      withParams: ["model", "messages", "stream"],
+      action: (params) => {params.messages = params.messages.slice(1); return params;},
+  },
 };
 
 const CONFIG_DEFAULT = {
