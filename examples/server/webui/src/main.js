@@ -139,6 +139,14 @@ const models = {
     modelName: 'unsloth_Llama-3.3-70B-Instruct-GGUF_Llama-3.3-70B-Instruct-Q4_K_M',
     withParams: locallModelParams,
   },
+  qwq: {
+    id: 'qwq',
+    name: 'QwQ',
+    description: "Qwen Team's 32B model. test model.",
+    baseUrl: BASE_URL,
+    modelName: 'bartowski_QwQ-32B-Preview-GGUF_QwQ-32B-Preview-Q5_K_M',
+    withParams: locallModelParams,
+  },
   unknown: {
     id: 'unknown',
     name: 'Other',
