@@ -139,6 +139,14 @@ const models = {
     modelName: 'unsloth_Llama-3.3-70B-Instruct-GGUF_Llama-3.3-70B-Instruct-Q4_K_M',
     withParams: locallModelParams,
   },
+  unknown: {
+    id: 'unknown',
+    name: 'Other',
+    description: "Local's running unknown model, ask administator for details",
+    baseUrl: BASE_URL,
+    modelName: 'unknown',
+    withParams: locallModelParams,
+  },
   gpt4o: {
     id: 'gpt4o',
     name: 'GPT-4o',
@@ -576,7 +584,7 @@ const mainApp = createApp({
     },
     async generateMessage(currConvId) {
       if (this.isGenerating) return;
-      if (!(await this.isModelRunnable())) return this.switchModel();
+      this.updateCurrentLocalModel();
 
       this.pendingMsg = {
         id: Date.now() + 1,
@@ -745,26 +753,28 @@ const mainApp = createApp({
 
     // Model selection
     onModelChange(event) {
-      this.config.currentModel = models[event.target.value];
-      this.currentModelId = models[event.target.value].id;
-      this.modelDescription = models[event.target.value].description;
+      this.updateModelInfo(event.target.value);
       StorageUtils.setConfig(this.config);
     },
 
     async updateCurrentLocalModel() {
       const modelName = await getCurrentModelName();
       this.currentLocalModel = modelName;
+
+      if (this.config.currentModel.baseUrl === BASE_URL) {
+        const model = _.find(models, { modelName }) || models.unknown;
+        this.updateModelInfo(model.id);
+        this.config.currentModel = model;
+        if (models.id === models.unknown.id) this.currentLocalModel = models.unknown.modelName;
+      }
+      StorageUtils.setConfig(this.config);
       return modelName;
     },
 
-    async isModelRunnable() {
-      if (this.config.currentModel.baseUrl !== BASE_URL) return true;
-      const modelName = await this.updateCurrentLocalModel();
-      return modelName === this.config.currentModel.modelName;
-    },
-
-    switchModel() {
-      return alert('The model you selected is not available. Ask the administrator to enable the model');
+    updateModelInfo(modelName) {
+      this.config.currentModel = models[modelName];
+      this.currentModelId = models[modelName].id;
+      this.modelDescription = models[modelName].description;
     },
 
     // debug functions
