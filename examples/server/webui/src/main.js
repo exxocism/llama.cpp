@@ -715,11 +715,12 @@ const mainApp = createApp({
       StorageUtils.filterAndKeepMsgs(currConvId, (m) => m.id < msg.id);
       StorageUtils.appendMsg(currConvId, {
         id: Date.now(),
-        role: 'user',
+        role: msg.role,
         content: newContent,
       });
       this.fetchConversation();
       this.fetchMessages();
+      if (msg.role === 'assistant') return;
       this.generateMessage(currConvId);
     },
 
