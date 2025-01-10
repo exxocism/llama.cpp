@@ -286,16 +286,16 @@
     </div>
     <!-- actions for each message -->
     <div :class="{'text-right': msg.role === 'user', 'opacity-0': isGenerating}" class="mx-4 mt-2 mb-2">
-      <!-- user message -->
-      <button class="badge btn-mini show-on-hover" @click="editingContent = msg.content" :disabled="isGenerating">
-        ✍️ Edit
-      </button>
       <!-- assistant message -->
       <button v-if="msg.role === 'assistant'" class="badge btn-mini show-on-hover mr-2" @click="regenerateMsg(msg)" :disabled="isGenerating">
         🔄 Regenerate
       </button>
       <button v-if="msg.role === 'assistant'" class="badge btn-mini show-on-hover mr-2" @click="copyMsg()" :disabled="isGenerating">
         📋 Copy
+      </button>
+      <!-- user message -->
+      <button class="badge btn-mini show-on-hover" @click="editingContent = msg.content" :disabled="isGenerating">
+        ✍️ Edit
       </button>
     </div>
   </template>
