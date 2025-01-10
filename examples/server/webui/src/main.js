@@ -122,6 +122,10 @@ const actions = {
   },
 };
 
+const stringifyFunction = (key, val) => (typeof val === 'function' ? `(() => ${val.toString()})()` : val);
+const evalFunction = (key, val) =>
+  typeof val === 'string' && val.startsWith('(() => ') && val.endsWith(')()') ? eval(`(${val})`) : val;
+
 const models = {
   mistralAI: {
     id: 'mistralAI',
@@ -422,7 +426,7 @@ const StorageUtils = {
 
   // manage config
   getConfig() {
-    const savedVal = JSON.parse(localStorage.getItem('config') || '{}');
+    const savedVal = JSON.parse(localStorage.getItem('config') || '{}', evalFunction);
     // to prevent breaking changes in the future, we always provide default value for missing keys
     return {
       ...CONFIG_DEFAULT,
@@ -430,7 +434,7 @@ const StorageUtils = {
     };
   },
   setConfig(config) {
-    localStorage.setItem('config', JSON.stringify(config));
+    localStorage.setItem('config', JSON.stringify(config, stringifyFunction));
   },
   getTheme() {
     return localStorage.getItem('theme') || 'auto';
