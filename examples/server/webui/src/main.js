@@ -271,13 +271,13 @@ const VueMarkdown = defineComponent(
           if (lang && hljs.getLanguage(lang)) {
             try {
               return (
-                '<pre><code class="hljs">' +
+                '<pre dir="auto"><code class="hljs">' +
                 hljs.highlight(str, { language: lang, ignoreIllegals: true }).value +
                 '</code></pre>'
               );
             } catch (__) {}
           }
-          return '<pre><code class="hljs">' + md.value.utils.escapeHtml(str) + '</code></pre>';
+          return '<pre dir="auto"><code class="hljs">' + md.value.utils.escapeHtml(str) + '</code></pre>';
         },
       })
     );
