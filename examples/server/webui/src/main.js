@@ -120,6 +120,15 @@ const actions = {
     params.messages = params.messages.slice(1);
     return params;
   },
+  removeThinkingTags: (params) => {
+    params.messages = params.messages.map((m) => {
+      if (m.content.startsWith('<think>\n')) m.content = m.content.slice(8);
+      const sliceFrom = m.content.indexOf('</think>\n');
+      if (sliceFrom !== -1) m.content = m.content.slice(sliceFrom + 9);
+      return m;
+    });
+    return params;
+  },
 };
 
 const stringifyFunction = (key, val) => (typeof val === 'function' ? `(() => ${val.toString()})()` : val);
@@ -150,6 +159,7 @@ const models = {
     baseUrl: BASE_URL,
     modelName: 'bartowski_DeepSeek-R1-Distill-Llama-70B-GGUF_DeepSeek-R1-Distill-Llama-70B-Q4_K_M',
     withParams: locallModelParams,
+    action: actions.removeThinkingTags,
   },
   unknown: {
     id: 'unknown',
