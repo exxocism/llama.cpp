@@ -143,12 +143,12 @@ const models = {
     modelName: 'unsloth_Llama-3.3-70B-Instruct-GGUF_Llama-3.3-70B-Instruct-Q4_K_M',
     withParams: locallModelParams,
   },
-  qwq: {
-    id: 'qwq',
-    name: 'QwQ',
-    description: "Qwen Team's 32B model. test model.",
+  deepseekR1: {
+    id: 'deepseekR1',
+    name: 'Deepseek R1',
+    description: 'Local thinking model. experimental.',
     baseUrl: BASE_URL,
-    modelName: 'bartowski_QwQ-32B-Preview-GGUF_QwQ-32B-Preview-Q5_K_M',
+    modelName: 'bartowski_DeepSeek-R1-Distill-Llama-70B-GGUF_DeepSeek-R1-Distill-Llama-70B-Q4_K_M',
     withParams: locallModelParams,
   },
   unknown: {
