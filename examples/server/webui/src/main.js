@@ -146,7 +146,7 @@ const models = {
     name: 'MistralAI',
     description: 'French 24B Model. fast and generally good.',
     baseUrl: BASE_URL,
-    modelName: 'llama.cpp/bartowski_Mistral-Small-24B-Instruct-2501-GGUF_Mistral-Small-24B-Instruct-2501-Q4_K_M',
+    modelName: 'bartowski_Mistral-Small-24B-Instruct-2501-GGUF_Mistral-Small-24B-Instruct-2501-Q4_K_M',
     withParams: locallModelParams,
   },
   llama3_3: {
