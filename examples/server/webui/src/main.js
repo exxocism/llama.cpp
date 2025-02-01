@@ -125,6 +125,10 @@ const actions = {
     params.messages = params.messages.slice(1);
     return params;
   },
+  replaceSystemMessagesWithDeveloper: (params) => {
+    params.messages[0].role = 'developer';
+    return params;
+  },
   removeThinkingTags: (params) => {
     params.messages = params.messages.map((m) => {
       if (m.content.startsWith('<think>\n')) m.content = m.content.slice(8);
@@ -199,6 +203,15 @@ const models = {
     modelName: 'o1-preview',
     withParams: ['model', 'messages', 'stream'],
     action: actions.removeSystemMessages,
+  },
+  o3mini: {
+    id: 'o3mini',
+    name: 'GPT-o3 mini',
+    description: 'Coming closer to AGI. Not yet available.',
+    baseUrl: 'https://api.openai.com',
+    modelName: 'o3-mini',
+    withParams: ['model', 'messages', 'stream'],
+    action: actions.replaceSystemMessagesWithDeveloper,
   },
 };
 
